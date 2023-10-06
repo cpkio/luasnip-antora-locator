@@ -12,7 +12,11 @@ local antora = require('luasnip-antora-locator')
 
 ls.add_snippets('asciidoc', {
   s({ trig = 'xref', desc = 'Antora Locator Snippet. Use Tab and choice switch mappings'}, {
-    c(1, { t('xref:'), t('include::') }),
+    c(1, {
+      t('xref:'),
+      t('include::'),
+      t('image::')
+    }),
     d(2,  function()
             return sn(nil, c(1, antora.components()) )
           end,
