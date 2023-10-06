@@ -71,17 +71,23 @@ local getmodules = coroutine.create(function(data)
                     data[key]['modules'][module][family:sub(1,-2)] = {}
                     local family_full = module_full .. '/' .. family
 
-                    for element in lfs.dir(family_full) do
-                      if element ~= '.' and element ~= '..' then
-                        local element_full = family_full .. '/' .. element
-                        if lfs.attributes(element_full, "mode") == 'directory' then
-                          table.insert(data[key]['modules'][module][family:sub(1,-2)], element .. '/')
-                        else
-                          table.insert(data[key]['modules'][module][family:sub(1,-2)], element)
+                    local function yieldtree(dir, base)
+                      for e in lfs.dir(dir) do
+                        if e ~= "." and e ~= ".." then
+                          local e_full = dir.."/"..e
+                          local b; if #base > 0 then b = base .. '/' .. e else b = e end
+                          local a = lfs.attributes(e_full)
+                          if a.mode == "directory" then
+                            table.insert(data[key]['modules'][module][family:sub(1,-2)], b .. '/')
+                            yieldtree(e_full, e)
+                          else
+                            table.insert(data[key]['modules'][module][family:sub(1,-2)], b)
+                          end
                         end
                       end
                     end
 
+                    yieldtree(family_full, '')
                   end
                 end
 
