@@ -31,6 +31,9 @@ actually available to you.
 2. `yq` to convert `antora.yml` (Antora component config) to JSON, which is
    parseable by Neovim
 
+Using with [nvim-fzf-ui-select](https://github.com/cpkio/nvim-fzf-ui-select)
+plugin is strongly recommended.
+
 ## Usage
 
 `require('luasnip-antora-locator').setup([[your-antora-components-directory]])` in your `init.lua`
