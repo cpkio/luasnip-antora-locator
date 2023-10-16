@@ -36,7 +36,12 @@ ls.add_snippets('asciidoc', {
             return sn(nil, c(1, antora.resources( args[1], args[2], args[3] )) )
           end,
           { 2, 3, 4 }),
-    t('[]'),
+    t('['),
+    d(6,  function(args)
+            return sn(nil, c(1, antora.tags( args[1], args[2], args[3], args[4] )) )
+          end,
+          { 2, 3, 4, 5 }),
+    t(']'),
     i(0)
   })
 })

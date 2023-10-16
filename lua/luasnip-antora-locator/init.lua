@@ -23,6 +23,50 @@ local function read_config(config_path)
   return vim.json.decode(result)
 end
 
+local gettags = coroutine.create(function(dir)
+  while true do
+    local res = {}
+    local _dir = string.gsub(dir, '\\', '/')
+    local tags = vim.fn.taglist('.*')
+    local pathlen = string.len(_dir)
+
+    for _, v in pairs(tags) do
+      local found = string.find(v.filename, _dir, 1, true)
+      if found then
+        local taglocation = string.sub(v.filename, found+pathlen+1)
+        local s = string.gsub(taglocation, '/', ' ', 4)
+        local pathway = vim.fn.split(s, ' ')
+        if pathway[2] == 'modules' then
+          table.remove(pathway, 2)
+          table.insert(pathway, v.name)
+          local c, m, f, file, tag = unpack(pathway)
+          f = f:sub(1,-2)
+
+          if not res[c] then
+            res[c] = {}
+          end
+
+          if not res[c][m] then
+            res[c][m] = {}
+          end
+
+          if not res[c][m][f] then
+            res[c][m][f] = {}
+          end
+
+          if not res[c][m][f][file] then
+            res[c][m][f][file] = {}
+          end
+
+          table.insert(res[c][m][f][file], tag)
+        end
+
+      end
+    end
+    coroutine.yield(res)
+  end
+end)
+
 local getcomponents = coroutine.create(function(dir)
   while true do
     assert(dir and dir ~= '', 'Please pass directory parameter')
@@ -32,8 +76,12 @@ local getcomponents = coroutine.create(function(dir)
 
     local components = {}
 
+    local code_tags, _tags = coroutine.resume(gettags, M.root)
+    assert(code_tags, 'Tags load error')
+
     for entry in lfs.dir(dir) do
         if entry ~= '.' and entry ~= '..' then
+            local _entry = entry
             entry = dir .. '/' .. entry
             local attr = lfs.attributes(entry)
             if attr.mode == 'directory' then
@@ -41,7 +89,7 @@ local getcomponents = coroutine.create(function(dir)
               local config_file = lfs.attributes(config_path)
               if config_file and config_file.mode == 'file' then
                 local config = read_config(config_path)
-                components[config.name] = { dir = entry }
+                components[config.name] = { dir = entry, tags = _tags[_entry] }
               end
             end
         end
@@ -78,10 +126,19 @@ local getmodules = coroutine.create(function(data)
                           local b; if #base > 0 then b = base .. '/' .. e else b = e end
                           local a = lfs.attributes(e_full)
                           if a.mode == "directory" then
-                            table.insert(data[key]['modules'][module][family:sub(1,-2)], b .. '/')
+                            data[key]['modules'][module][family:sub(1,-2)][b .. '/'] = {}
                             yieldtree(e_full, e)
                           else
-                            table.insert(data[key]['modules'][module][family:sub(1,-2)], b)
+                            data[key]['modules'][module][family:sub(1,-2)][b] = {}
+
+                            if  data[key]['tags'] and
+                                data[key]['tags'][module] and
+                                data[key]['tags'][module][family:sub(1,-2)] and
+                                data[key]['tags'][module][family:sub(1,-2)][b] then
+
+                                data[key]['modules'][module][family:sub(1,-2)][b] = data[key]['tags'][module][family:sub(1,-2)][b]
+                            end
+
                           end
                         end
                       end
@@ -107,9 +164,9 @@ M.root = nil
 
 M.refresh = function()
   local code_components, data = coroutine.resume(getcomponents, M.root)
-  assert(code_components, 'Error')
+  assert(code_components, 'Components load error')
   local code_repositories, repositories = coroutine.resume(getmodules, data)
-  assert(code_repositories, 'Error')
+  assert(code_repositories, 'Modules and families load error')
   M.db = repositories
 end
 
@@ -156,11 +213,29 @@ M.resources = function(component, module, family)
   module = unpack(module)
   family = unpack(family)
   if M.db[component]['modules'][module] and M.db[component]['modules'][module][family] then
-    for _, v in pairs(M.db[component]['modules'][module][family]) do
-      table.insert(resource_list, t(v))
+    for k, v in pairs(M.db[component]['modules'][module][family]) do
+      table.insert(resource_list, t(k))
     end
   end
   return resource_list
+end
+
+M.tags = function(component, module, family, file)
+  local tags_list = { t('') }
+  component = unpack(component)
+  module = unpack(module)
+  family = unpack(family)
+  file = unpack(file)
+  vim.notify(component .. ' ' .. module .. ' ' .. family .. ' ' .. file)
+  if  M.db[component]['modules'][module] and
+      M.db[component]['modules'][module][family] and
+      M.db[component]['modules'][module][family][file] then
+
+      for _, v in pairs(M.db[component]['modules'][module][family][file]) do
+        table.insert(tags_list, t('tag=' .. v) )
+      end
+  end
+  return tags_list
 end
 
 return M
