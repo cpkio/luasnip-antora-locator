@@ -129,7 +129,7 @@ local getmodules = coroutine.create(function(data)
                           local a = lfs.attributes(e_full)
                           if a.mode == "directory" then
                             data[key]['modules'][module][family:sub(1,-2)][b .. '/'] = {}
-                            yieldtree(e_full, e)
+                            yieldtree(e_full, b)
                           else
                             data[key]['modules'][module][family:sub(1,-2)][b] = {}
 
