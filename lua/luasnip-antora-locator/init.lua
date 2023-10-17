@@ -31,36 +31,38 @@ local gettags = coroutine.create(function(dir)
     local pathlen = string.len(_dir)
 
     for _, v in pairs(tags) do
-      local found = string.find(v.filename, _dir, 1, true)
-      if found then
-        local taglocation = string.sub(v.filename, found+pathlen+1)
-        local s = string.gsub(taglocation, '/', ' ', 4)
-        local pathway = vim.fn.split(s, ' ')
-        if pathway[2] == 'modules' then
-          table.remove(pathway, 2)
-          table.insert(pathway, v.name)
-          local c, m, f, file, tag = unpack(pathway)
-          f = f:sub(1,-2)
+      if v.kind == 't' then
+        local found = string.find(v.filename, _dir, 1, true)
+        if found then
+          local taglocation = string.sub(v.filename, found+pathlen+1)
+          local s = string.gsub(taglocation, '/', ' ', 4)
+          local pathway = vim.fn.split(s, ' ')
+          if pathway[2] == 'modules' then
+            table.remove(pathway, 2)
+            table.insert(pathway, v.name)
+            local c, m, f, file, tag = unpack(pathway)
+            f = f:sub(1,-2)
 
-          if not res[c] then
-            res[c] = {}
+            if not res[c] then
+              res[c] = {}
+            end
+
+            if not res[c][m] then
+              res[c][m] = {}
+            end
+
+            if not res[c][m][f] then
+              res[c][m][f] = {}
+            end
+
+            if not res[c][m][f][file] then
+              res[c][m][f][file] = {}
+            end
+
+            table.insert(res[c][m][f][file], tag)
           end
 
-          if not res[c][m] then
-            res[c][m] = {}
-          end
-
-          if not res[c][m][f] then
-            res[c][m][f] = {}
-          end
-
-          if not res[c][m][f][file] then
-            res[c][m][f][file] = {}
-          end
-
-          table.insert(res[c][m][f][file], tag)
         end
-
       end
     end
     coroutine.yield(res)
