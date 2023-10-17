@@ -78,7 +78,7 @@ local getcomponents = coroutine.create(function(dir)
 
     local components = {}
 
-    local code_tags, _tags = coroutine.resume(gettags, M.root)
+    local code_tags, _tags = coroutine.resume(gettags, dir)
     assert(code_tags, 'Tags load error')
 
     for entry in lfs.dir(dir) do
