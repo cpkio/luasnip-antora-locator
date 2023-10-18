@@ -174,8 +174,12 @@ end
 
 M.setup = function(root_repo)
   assert(lfs.attributes(root_repo), 'Root is not a valid dir')
-  M.root = root_repo or [[C:\]]
-  M.refresh()
+  if M.root == root_repo and M.db ~= {} then
+    return
+  else
+    M.root = root_repo or [[C:\]]
+    M.refresh()
+  end
 end
 
 M.components = function()
@@ -228,7 +232,6 @@ M.tags = function(component, module, family, file)
   module = unpack(module)
   family = unpack(family)
   file = unpack(file)
-  vim.notify(component .. ' ' .. module .. ' ' .. family .. ' ' .. file)
   if  M.db[component]['modules'][module] and
       M.db[component]['modules'][module][family] and
       M.db[component]['modules'][module][family][file] then
