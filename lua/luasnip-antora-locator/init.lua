@@ -25,13 +25,14 @@ end
 
 local gettags = coroutine.create(function(dir)
   while true do
-    local res = {}
+    local result_tags = {}
+    local result_anchors = {}
     local _dir = string.gsub(dir, '\\', '/')
     local tags = vim.fn.taglist('.*')
     local pathlen = string.len(_dir)
 
     for _, v in pairs(tags) do
-      if v.kind == 't' then
+      if v.kind == 't' or v.kind == 'a' then
         local found = string.find(v.filename, _dir, 1, true)
         if found then
           local taglocation = string.sub(v.filename, found+pathlen+1)
@@ -43,29 +44,42 @@ local gettags = coroutine.create(function(dir)
             local c, m, f, file, tag = unpack(pathway)
             f = f:sub(1,-2)
 
-            if not res[c] then
-              res[c] = {}
+            if v.kind == 't' then
+              if not result_tags[c] then
+                  result_tags[c] = {}
+              end
+              if not result_tags[c][m] then
+                  result_tags[c][m] = {}
+              end
+              if not result_tags[c][m][f] then
+                  result_tags[c][m][f] = {}
+              end
+              if not result_tags[c][m][f][file] then
+                  result_tags[c][m][f][file] = {}
+              end
+              table.insert(result_tags[c][m][f][file], tag)
             end
 
-            if not res[c][m] then
-              res[c][m] = {}
+            if v.kind == 'a' then
+              if not result_anchors[c] then
+                  result_anchors[c] = {}
+              end
+              if not result_anchors[c][m] then
+                  result_anchors[c][m] = {}
+              end
+              if not result_anchors[c][m][f] then
+                  result_anchors[c][m][f] = {}
+              end
+              if not result_anchors[c][m][f][file] then
+                  result_anchors[c][m][f][file] = {}
+              end
+              table.insert(result_anchors[c][m][f][file], tag)
             end
-
-            if not res[c][m][f] then
-              res[c][m][f] = {}
-            end
-
-            if not res[c][m][f][file] then
-              res[c][m][f][file] = {}
-            end
-
-            table.insert(res[c][m][f][file], tag)
           end
-
         end
       end
     end
-    coroutine.yield(res)
+    coroutine.yield(result_tags, result_anchors)
   end
 end)
 
@@ -78,7 +92,7 @@ local getcomponents = coroutine.create(function(dir)
 
     local components = {}
 
-    local code_tags, _tags = coroutine.resume(gettags, dir)
+    local code_tags, _tags, _anchors = coroutine.resume(gettags, dir)
     assert(code_tags, 'Tags load error')
 
     for entry in lfs.dir(dir) do
@@ -91,7 +105,7 @@ local getcomponents = coroutine.create(function(dir)
               local config_file = lfs.attributes(config_path)
               if config_file and config_file.mode == 'file' then
                 local config = read_config(config_path)
-                components[config.name] = { dir = entry, tags = _tags[_entry] }
+                components[config.name] = { dir = entry, tags = _tags[_entry], anchors = _anchors[_entry] }
               end
             end
         end
@@ -241,6 +255,23 @@ M.tags = function(component, module, family, file)
       end
   end
   return tags_list
+end
+
+M.anchors = function(component, module, family, file)
+  local anchors_list = { t('') }
+  component = unpack(component)
+  module = unpack(module)
+  family = unpack(family)
+  file = unpack(file)
+  if  M.db[component]['modules'][module] and
+      M.db[component]['modules'][module][family] and
+      M.db[component]['modules'][module][family][file] then
+
+      for _, v in pairs(M.db[component]['modules'][module][family][file]) do
+        table.insert(anchors_list, t('#' .. v) )
+      end
+  end
+  return anchors_list
 end
 
 return M
