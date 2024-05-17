@@ -17,10 +17,6 @@ directory. Point setup function to this directory. The plugin will scan all the
 directories, find Antora components (by `antora.yml`) and load components
 name and `/modules` content (component → modules → families → files).
 
-Files for now are loaded non-recursively, you will get only directories and
-files directly under family folder (`/pages/index.adoc` and
-`/pages/subdirectory/`, no `/pages/subdirectory/index.adoc`).
-
 This in-memory structure will be used by the snippet to suggest only what is
 actually available to you.
 
@@ -38,8 +34,13 @@ plugin is strongly recommended.
 
 `require('luasnip-antora-locator').setup([[your-antora-components-directory]])` in your `init.lua`
 
-Set `ft=asciidoc`, input `xref` Luasnip-trigger, choose snippet. Use Tab no switch to next
+Set `ft=asciidoc`, input `xref` Luasnip-trigger, choose snippet. Use Tab to switch to next
 input field and your mapping of choice to select next snippet choice option.
 
 If components, modules, families or files were added or removed on disk while Neovim is
 running, use `:AntoraLocatorUpdate` command to update snippet choices.
+
+## Compatibility
+
+Nvim0.10 introduced breaking changes to API, changing `vim._system()` call to
+`vim.system()`. Commits now have tags, noting compatibility changes.

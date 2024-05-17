@@ -19,8 +19,8 @@ local function read_config(config_path)
     'json'
   }
 
-  local code, result = vim._system(opts, {text=true})
-  return vim.json.decode(result)
+  local res = vim.system(opts, {text=true}):wait()
+  return vim.json.decode(res.stdout)
 end
 
 local gettags = coroutine.create(function(dir)
