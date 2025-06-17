@@ -1,4 +1,5 @@
 local lfs = require'lfs'
+local bitser = require'bitser'
 
 local ls = require('luasnip')
 local t = ls.text_node
@@ -184,6 +185,10 @@ M.refresh = function()
   local code_repositories, repositories = coroutine.resume(getmodules, data)
   assert(code_repositories, 'Modules and families load error')
   M.db = repositories
+  local store = bitser.dumps(repositories)
+  local database = io.open(M.root .. '/database.bin', 'wb')
+  database:write(store)
+  database:close()
 end
 
 M.setup = function(root_repo)
@@ -192,7 +197,10 @@ M.setup = function(root_repo)
     return
   else
     M.root = root_repo or [[C:\]]
-    M.refresh()
+    local database = io.open(M.root .. '/database.bin', 'rb')
+    local store = database:read('*all')
+    database:close()
+    M.db = bitser.loads(store)
   end
 end
 
